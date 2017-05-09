@@ -10,7 +10,19 @@
     Creates a text field that shows the value of the "name" property.
     When submitted, it will be passed to the corresponding constructor parameter.
   -->
-  <f:entry title="Base URL" field="baseURL">
+  <f:entry title="Base URL" field="baseURL" description="Which Fossa endpoint to contact.">
     <f:textbox default="https://app.fossa.io" />
+  </f:entry>
+  <f:entry title="Fossa API Token" field="token" description="Fossa integration API token. See http://fossa.io/docs/projects/api-endpoints for more detail.">
+    <f:textbox />
+  </f:entry>
+  <f:entry title="Timeout" field="timeout" description="Maximum time to wait for Fossa to finish analysis. Minimum is 30 seconds. Default is 1 hour.">
+    <f:textbox default="3600000" />
+  </f:entry>
+  <f:entry title="Sleep interval" field="sleep" description="The time between poll requests to Fossa. Minimum is 30 seconds. Default is 2 minutes.">
+    <f:textbox default="3000" />
+  </f:entry>
+  <f:entry title="Retry HTTP Requests" field="retries" description="The number of times this plugin should retry HTTP requests to the Fossa endpoint. Minimum is 1. Maximum is 10. Default is 3.">
+    <f:textbox default="3" />
   </f:entry>
 </j:jelly>

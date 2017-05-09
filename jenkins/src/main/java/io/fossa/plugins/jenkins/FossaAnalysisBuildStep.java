@@ -4,6 +4,7 @@ import hudson.Launcher;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.model.AbstractProject;
+import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.tasks.Builder;
@@ -21,15 +22,17 @@ import org.kohsuke.stapler.StaplerRequest;
 import java.io.IOException;
 
 public class FossaAnalysisBuildStep extends Builder implements SimpleBuildStep {
-    private String baseURL;
+    private FossaService service;
 
     @DataBoundConstructor
-    public FossaAnalysisBuildStep(String baseURL) {
-        this.baseURL = baseURL;
+    public FossaAnalysisBuildStep(String baseURL, String token, int timeout, int sleep, int retries) {
+        this.service = new FossaService(baseURL, token, timeout, sleep, retries);
     }
 
     @Override
     public void perform(Run<?,?> build, FilePath workspace, Launcher launcher, TaskListener listener) throws IOException, InterruptedException {
+        service.setLogger(listener.getLogger());
+
         EnvVars envVars = build.getEnvironment(listener);
         String commitId = envVars.get("GIT_COMMIT",null);
         String branch = envVars.get("GIT_COMMIT",null);
@@ -37,41 +40,47 @@ public class FossaAnalysisBuildStep extends Builder implements SimpleBuildStep {
 
         if (commitId == null || branch == null || gitUrl == null) {
             listener.fatalError("The Fossa Plugin must be used in conjunction with Git.");
+            build.setResult(Result.ABORTED);
             return;
         }
-
-        FossaService service = new FossaService(baseURL, listener.getLogger());
 
         Build fbuild;
         try {
             // Wait 1 hour
-            fbuild = service.analyzeAndWaitUntilIsFinished(new Locator("git", gitUrl, commitId), 10000, 360);
+            fbuild = service.analyzeAndWaitUntilBuildIsFinished(new Locator("git", gitUrl, commitId));
         } catch (ParseException e) {
+            listener.fatalError("Fossa could not finish analyzing.");
             listener.fatalError(e.getMessage());
+            listener.fatalError(e.toString());
+            build.setResult(Result.FAILURE);
             return;
         }
 
         if (!fbuild.isFinished()) {
             listener.fatalError("Fossa could not finish analyzing in the configured time.");
+            build.setResult(Result.FAILURE);
             return;
         }
 
         Revision revision;
         try {
             // Wait 5 minutes
-            revision = service.waitUntilScanIsFinished(service.getRevision(fbuild.getLocator()), 10000, 30);
+            revision = service.waitUntilScanIsFinished(service.getRevision(fbuild.getLocator()));
         } catch (ParseException e) {
             listener.fatalError(e.getMessage());
+            build.setResult(Result.FAILURE);
             return;
         }
 
         if (!revision.isFinishedScanning()) {
             listener.fatalError("Fossa could not finish scanning in the configured time.");
+            build.setResult(Result.FAILURE);
             return;
         }
 
         if (revision.getUnresolvedIssueCount() > 0) {
             listener.fatalError(String.format("Fossa found %s issues.", revision.getUnresolvedIssueCount()));
+            build.setResult(Result.FAILURE);
         }
     }
 

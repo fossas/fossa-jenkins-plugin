@@ -3,11 +3,11 @@ package io.fossa.service;
 import org.json.simple.JSONObject;
 
 public class Build {
-    private int id;
+    private long id;
     private Locator locator;
     private String status;
 
-    public Build(Integer id, Locator locator, String status) {
+    public Build(long id, Locator locator, String status) {
         this.id = id;
         this.locator = locator;
         this.status = status;
@@ -17,38 +17,26 @@ public class Build {
         return locator;
     }
 
-    public void setLocator(Locator locator) {
-        this.locator = locator;
-    }
-
     public String getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public Integer getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(Integer id) {
-        this.id = id;
-    }
-
     public boolean isFinished() {
-        return this.status.equals("SUCCEEDED") || this.status.equals("FAILED");
+        return getStatus() != null && ( getStatus().equals("SUCCEEDED") || getStatus().equals("FAILED") );
     }
 
     public static class Builder {
-        private int id;
+        private long id;
         private Locator locator;
         private String status;
 
         public Builder() {}
 
-        public void setId(int id) {
+        public void setId(long id) {
             this.id = id;
         }
 
@@ -61,7 +49,7 @@ public class Build {
         }
 
         public void fromJSON(JSONObject o) {
-            this.setId((Integer)o.get("id"));
+            this.setId((Long)o.get("id"));
             this.setLocator(Locator.fromLocator((String)o.get("locator")));
             this.setStatus((String)o.get("status"));
         }

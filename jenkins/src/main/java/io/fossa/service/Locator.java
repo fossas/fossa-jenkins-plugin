@@ -52,4 +52,8 @@ public class Locator {
     public String toString() {
         return String.format("%s+%s$%s", this.fetcher, this.pkg, this.revision);
     }
+
+    public String toPackageString() {
+        return String.format("%s+%s", this.fetcher, this.pkg);
+    }
 }
